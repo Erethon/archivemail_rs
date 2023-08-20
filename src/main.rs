@@ -1,5 +1,5 @@
 use clap::{Args, Parser};
-use maildir::{MailEntry, Maildir};
+use maildir::Maildir;
 use std::error::Error;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -62,17 +62,16 @@ struct Action {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    if cli.verbose || cli.dry_run {
-        simple_logger::SimpleLogger::new()
-            .with_level(log::LevelFilter::Info)
-            .init()
-            .unwrap();
+    let log_level = if cli.verbose || cli.dry_run {
+        log::LevelFilter::Info
     } else {
-        simple_logger::SimpleLogger::new()
-            .with_level(log::LevelFilter::Error)
-            .init()
-            .unwrap();
-    }
+        log::LevelFilter::Error
+    };
+
+    simple_logger::SimpleLogger::new()
+        .with_level(log_level)
+        .init()
+        .unwrap();
 
     let maildir = Maildir::from(cli.mailbox);
     let dest = Maildir::from(cli.action.output.unwrap_or("".to_string()));
@@ -85,9 +84,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap()
         .as_secs() as i64; // this seems the least of two evils compared to using chrono
 
-    let mails: Vec<MailEntry> = maildir.list_cur().filter_map(Result::ok).collect();
-
-    for mut mail in mails {
+    for mut mail in maildir.list_cur().filter_map(Result::ok) {
         match mail.date() {
             Ok(date_of_mail) => {
                 if date_of_mail < older {
