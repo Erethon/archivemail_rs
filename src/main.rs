@@ -86,29 +86,28 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for mut mail in maildir.list_cur().filter_map(Result::ok) {
         match mail.date() {
-            Ok(date_of_mail) => {
-                if date_of_mail < older {
-                    let mail_id = mail.id();
-                    log::info!("Processing mail {:?}", mail_id);
+            Ok(date_of_mail) if date_of_mail < older => {
+                let mail_id = mail.id();
+                log::info!("Processing mail {:?}", mail_id);
 
-                    if !cli.dry_run {
-                        let result = if cli.action.delete {
-                            maildir.delete(mail_id)
-                        } else {
-                            maildir.move_to(mail_id, &dest)
-                        };
+                if !cli.dry_run {
+                    let result = if cli.action.delete {
+                        maildir.delete(mail_id)
+                    } else {
+                        maildir.move_to(mail_id, &dest)
+                    };
 
-                        match result {
-                            Ok(_) => log::info!("Processed mail {:?}", mail_id),
-                            Err(error) => log::error!(
-                                "Failed to process mail {:?}, because {:?}",
-                                mail_id,
-                                error
-                            ),
-                        }
+                    match result {
+                        Ok(_) => log::info!("Processed mail {:?}", mail_id),
+                        Err(error) => log::error!(
+                            "Failed to process mail {:?}, because {:?}",
+                            mail_id,
+                            error
+                        ),
                     }
                 }
             }
+            Ok(_) => {} // Used as a catch all for mails that are newer than the set date
             Err(error) => {
                 log::error!(
                     "Encountered an error while proccessing mail {:?}. Error is {:?}",
