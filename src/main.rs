@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
 
     let maildir = Maildir::from(cli.mailbox);
-    let dest = Maildir::from(cli.action.output.unwrap_or("".to_string()));
+    let dest = Maildir::from(cli.action.output.unwrap_or_default());
 
     let days = Duration::from_secs(60 * 60 * 24 * cli.days);
     let older = SystemTime::now()
@@ -99,17 +99,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     match result {
                         Ok(_) => log::info!("Processed mail {:?}", mail_id),
-                        Err(error) => log::error!(
-                            "Failed to process mail {:?}, because {:?}",
-                            mail_id,
-                            error
-                        ),
+                        Err(error) => {
+                            log::error!("Failed to process mail {:?}, because {:?}", mail_id, error)
+                        }
                     }
                 }
             }
             Ok(_) => {} // Used as a catch all for mails that are newer than the set date
             Err(error) => {
                 log::error!(
+                    // Usually this is because of an email with an invalid TZ
                     "Encountered an error while proccessing mail {:?}. Error is {:?}",
                     mail.id(),
                     error
